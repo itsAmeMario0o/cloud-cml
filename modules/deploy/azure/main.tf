@@ -162,11 +162,12 @@ resource "azurerm_network_security_rule" "cml_patty_udp" {
   network_security_group_name = azurerm_network_security_group.cml.name
 }
 
-resource "azurerm_public_ip" "cml" {
-  name                = "cml-pub-ip-${var.options.rand_id}"
+# azure-lab fork: the public IP is owned by the persistent root so the
+# address, and the cml-mcp config that points at it, survive a rebuild.
+# ADR 0003.
+data "azurerm_public_ip" "cml" {
+  name                = var.options.cfg.azure.public_ip_name
   resource_group_name = data.azurerm_resource_group.cml.name
-  location            = data.azurerm_resource_group.cml.location
-  allocation_method   = "Static"
 }
 
 # azure-lab fork: the VNet and subnet are owned by the persistent root in
@@ -195,7 +196,7 @@ resource "azurerm_network_interface" "cml" {
     # summary names this address as its next hop. ADR 0003.
     private_ip_address_allocation = "Static"
     private_ip_address            = var.options.cfg.azure.private_ip
-    public_ip_address_id          = azurerm_public_ip.cml.id
+    public_ip_address_id          = data.azurerm_public_ip.cml.id
   }
 }
 

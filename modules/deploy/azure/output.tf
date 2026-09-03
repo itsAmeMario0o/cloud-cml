@@ -5,7 +5,7 @@
 #
 
 output "public_ip" {
-  value = azurerm_public_ip.cml.ip_address
+  value = data.azurerm_public_ip.cml.ip_address
 }
 
 output "sas_token" {
