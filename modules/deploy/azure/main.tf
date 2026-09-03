@@ -189,6 +189,12 @@ resource "azurerm_network_interface" "cml" {
   location            = data.azurerm_resource_group.cml.location
   resource_group_name = data.azurerm_resource_group.cml.name
 
+  # azure-lab fork: the CML host forwards between the lab transit network and
+  # the VNet. Azure drops forwarded packets unless this is on. Accelerated
+  # networking is free on E-series sizes and helps the image copy. ADR 0003.
+  ip_forwarding_enabled          = true
+  accelerated_networking_enabled = true
+
   ip_configuration {
     name      = "internal"
     subnet_id = data.azurerm_subnet.cml.id
