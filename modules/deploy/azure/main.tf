@@ -164,6 +164,25 @@ resource "azurerm_network_security_rule" "cml_patty_udp" {
   network_security_group_name = azurerm_network_security_group.cml.name
 }
 
+# azure-lab fork: ISE and FTD in the apps subnet reach lab prefixes through
+# this host. The NSG sits on the NIC and sees the forwarded packet's real
+# destination, which is a lab address, hence the summary as destination.
+# ADR 0003.
+resource "azurerm_network_security_rule" "lab_transit" {
+  count                       = try(var.options.cfg.azure.apps_subnet_cidr, "") != "" ? 1 : 0
+  name                        = "lab-transit-in"
+  priority                    = 400
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "*"
+  source_port_range           = "*"
+  destination_port_range      = "*"
+  source_address_prefix       = var.options.cfg.azure.apps_subnet_cidr
+  destination_address_prefix  = var.options.cfg.azure.lab_summary_cidr
+  resource_group_name         = data.azurerm_resource_group.cml.name
+  network_security_group_name = azurerm_network_security_group.cml.name
+}
+
 # azure-lab fork: the public IP is owned by the persistent root so the
 # address, and the cml-mcp config that points at it, survive a rebuild.
 # ADR 0003.
