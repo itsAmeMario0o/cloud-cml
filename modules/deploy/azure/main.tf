@@ -75,8 +75,10 @@ data "azurerm_storage_account_sas" "cml" {
     file  = false
   }
 
-  start  = timestamp()
-  expiry = timeadd(timestamp(), "1h")
+  start = timestamp()
+  # azure-lab fork: one hour is not enough for a large refplat selection over
+  # a busy link. Default four hours, overridable per build. ADR 0001.
+  expiry = timeadd(timestamp(), try(var.options.cfg.azure.sas_validity, "4h"))
 
   permissions {
     read    = true
