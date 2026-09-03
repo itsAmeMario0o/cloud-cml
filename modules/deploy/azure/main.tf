@@ -258,8 +258,10 @@ resource "azurerm_linux_virtual_machine" "cml" {
   }
 
   os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
+    caching = "ReadWrite"
+    # azure-lab fork: Standard_LRS is too slow for a 200 GB disk full of
+    # qcow2 images. Premium needs an "s" size, which the spec mandates. ADR 0001.
+    storage_account_type = try(var.options.cfg.azure.os_disk_type, "Premium_LRS")
     disk_size_gb         = var.options.cfg.common.disk_size
   }
 
