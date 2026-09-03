@@ -178,7 +178,7 @@ resource "azurerm_network_security_rule" "lab_transit" {
   source_port_range           = "*"
   destination_port_range      = "*"
   source_address_prefix       = var.options.cfg.azure.apps_subnet_cidr
-  destination_address_prefix  = var.options.cfg.azure.lab_summary_cidr
+  destination_address_prefix  = try(var.options.cfg.azure.lab_summary_cidr, "10.100.0.0/16")
   resource_group_name         = data.azurerm_resource_group.cml.name
   network_security_group_name = azurerm_network_security_group.cml.name
 }

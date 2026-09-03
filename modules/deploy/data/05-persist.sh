@@ -168,6 +168,17 @@ phase_post() {
   if [[ "${DRY_RUN}" != "1" ]] && getent passwd virl2 >/dev/null 2>&1; then
     run chown -R virl2:virl2 "${IMAGES_DIR}"
   fi
+  # Lab exports are written over SSH as sysadmin, and a freshly formatted
+  # ext4 root is owned by root, so sysadmin cannot write there without this.
+  local sys_user="sysadmin"
+  if [[ -r /provision/vars.sh ]]; then
+    # shellcheck disable=SC1091
+    source /provision/vars.sh
+    sys_user="${CFG_SYS_USER:-sysadmin}"
+  fi
+  if [[ "${DRY_RUN}" == "1" ]] || getent passwd "${sys_user}" >/dev/null 2>&1; then
+    run install -d -m 0775 -o "${sys_user}" -g "${sys_user}" "${DATA_MNT}/exports"
+  fi
   log "$(image_file_count) image files on the data disk"
   log "post phase done"
 }
