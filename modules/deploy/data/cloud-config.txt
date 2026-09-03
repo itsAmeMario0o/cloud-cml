@@ -63,6 +63,11 @@ write_files:
   %{ endfor }
 
 runcmd:
+  # azure-lab fork: prepare the data disk before cml.sh copies images. The
+  # file only exists when 05-persist.sh is listed under app.customize, so
+  # upstream configs are unaffected. Failures surface in the post phase and
+  # in /var/log/provision/05-persist-pre.log. ADR 0002 in cml-azure-lab.
+  - [ sh, -c, "test -f /provision/05-persist.sh && bash /provision/05-persist.sh pre || true" ]
   - /provision/cml.sh && touch /run/reboot || echo "CML provisioning failed.  Not rebooting"
 
 power_state:
