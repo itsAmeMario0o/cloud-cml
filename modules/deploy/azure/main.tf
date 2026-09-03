@@ -169,18 +169,18 @@ resource "azurerm_public_ip" "cml" {
   allocation_method   = "Static"
 }
 
-resource "azurerm_virtual_network" "cml" {
-  name                = "cml-network-${var.options.rand_id}"
-  address_space       = ["10.0.0.0/16"]
-  location            = data.azurerm_resource_group.cml.location
+# azure-lab fork: the VNet and subnet are owned by the persistent root in
+# cml-azure-lab so they survive a rebuild. Upstream created them here with a
+# hardcoded 10.0.0.0/16. ADR 0001.
+data "azurerm_virtual_network" "cml" {
+  name                = var.options.cfg.azure.vnet_name
   resource_group_name = data.azurerm_resource_group.cml.name
 }
 
-resource "azurerm_subnet" "cml" {
-  name                 = "internal"
+data "azurerm_subnet" "cml" {
+  name                 = var.options.cfg.azure.subnet_name
+  virtual_network_name = data.azurerm_virtual_network.cml.name
   resource_group_name  = data.azurerm_resource_group.cml.name
-  virtual_network_name = azurerm_virtual_network.cml.name
-  address_prefixes     = ["10.0.2.0/24"]
 }
 
 resource "azurerm_network_interface" "cml" {
@@ -189,9 +189,12 @@ resource "azurerm_network_interface" "cml" {
   resource_group_name = data.azurerm_resource_group.cml.name
 
   ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.cml.id
-    private_ip_address_allocation = "Dynamic"
+    name      = "internal"
+    subnet_id = data.azurerm_subnet.cml.id
+    # azure-lab fork: static, because the Azure route table for the lab
+    # summary names this address as its next hop. ADR 0003.
+    private_ip_address_allocation = "Static"
+    private_ip_address            = var.options.cfg.azure.private_ip
     public_ip_address_id          = azurerm_public_ip.cml.id
   }
 }
