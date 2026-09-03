@@ -244,6 +244,13 @@ resource "azurerm_linux_virtual_machine" "cml" {
 
   size = var.options.cfg.azure.size
 
+  # azure-lab fork: optional spot pricing. Deallocate on eviction so the OS
+  # disk and the attached data disk survive; the next 20-up.sh rebuilds.
+  # max_bid_price -1 means "up to the on-demand price". ADR 0001.
+  priority        = try(var.options.cfg.azure.spot.enabled, false) ? "Spot" : "Regular"
+  eviction_policy = try(var.options.cfg.azure.spot.enabled, false) ? "Deallocate" : null
+  max_bid_price   = try(var.options.cfg.azure.spot.enabled, false) ? try(var.options.cfg.azure.spot.max_bid_price, -1) : null
+
   # uncomment this block for diagnostics and serial console access to the VM
   # boot_diagnostics {
   # }
