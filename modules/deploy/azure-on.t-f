@@ -7,8 +7,11 @@
 terraform {
   required_providers {
     azurerm = {
-      source  = "hashicorp/azurerm"
-      version = ">=3.82.0"
+      source = "hashicorp/azurerm"
+      # Pinned to 4.x by the azure-lab fork. azurerm 5.x is current on the
+      # registry and upstream's open lower bound would select it. The patches
+      # on this branch use 4.x argument names. ADR 0001.
+      version = "~> 4.0"
     }
   }
   required_version = ">= 1.1.0"
