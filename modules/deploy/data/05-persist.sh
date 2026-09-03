@@ -96,6 +96,9 @@ format_if_blank() {
   run parted -s "${DATA_DEV}" mklabel gpt mkpart primary ext4 0% 100%
   run udevadm settle
   run mkfs.ext4 -L cmldata "${DATA_DEV}-part1"
+  # The LABEL=cmldata symlink under /dev/disk/by-label appears asynchronously
+  # after mkfs; settle again so mount_data's fstab lookup by label succeeds.
+  run udevadm settle
 }
 
 mount_data() {
@@ -109,7 +112,7 @@ image_file_count() {
   if [[ "${DRY_RUN}" == "1" ]]; then
     echo "${PRETEND_IMAGE_FILES}"
   else
-    find "${DATA_MNT}/images" -type f 2>/dev/null | wc -l | tr -d ' '
+    (find "${DATA_MNT}/images" -type f 2>/dev/null || true) | wc -l | tr -d ' '
   fi
 }
 
