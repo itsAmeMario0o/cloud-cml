@@ -306,7 +306,8 @@ resource "azurerm_linux_virtual_machine" "cml" {
 
 # azure-lab fork: attach the persistent data disk. It is created and kept by
 # the persistent root; this only attaches it. LUN 0 is what the provisioning
-# hook 05-persist.sh waits for at /dev/disk/azure/scsi1/lun0. ADR 0002.
+# hook 05-persist.sh waits for, under /dev/disk/azure on either the NVMe or
+# the SCSI link depending on the VM size. ADR 0002 and ADR 0005.
 resource "azurerm_virtual_machine_data_disk_attachment" "data" {
   count              = try(var.options.cfg.azure.data_disk_id, "") != "" ? 1 : 0
   managed_disk_id    = var.options.cfg.azure.data_disk_id

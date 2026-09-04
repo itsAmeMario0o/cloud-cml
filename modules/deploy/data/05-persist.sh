@@ -26,7 +26,12 @@
 set -euo pipefail
 
 PHASE="${1:-post}"
-DATA_DEV="${DATA_DEV:-/dev/disk/azure/scsi1/lun0}"
+# The data disk is attached at LUN 0. Azure links it at
+# /dev/disk/azure/data/by-lun/0 on NVMe sizes (v6 and newer) and at
+# /dev/disk/azure/scsi1/lun0 on SCSI sizes (v5 and older). Both carry a
+# -part1 link for the first partition. Setting DATA_DEV pins one path. ADR 0005.
+DATA_DEV_CANDIDATES="/dev/disk/azure/data/by-lun/0 /dev/disk/azure/scsi1/lun0"
+DATA_DEV="${DATA_DEV:-}"
 DATA_MNT="${DATA_MNT:-/data}"
 IMAGES_DIR="${IMAGES_DIR:-/var/lib/libvirt/images}"
 REFPLAT_JSON="${REFPLAT_JSON:-/provision/refplat}"
@@ -61,20 +66,28 @@ append_line() {
 }
 
 wait_for_device() {
-  local waited=0
+  local waited=0 dev candidates="${DATA_DEV:-${DATA_DEV_CANDIDATES}}"
   if [[ "${DRY_RUN}" == "1" ]]; then
+    DATA_DEV="${candidates%% *}"
     log "dry run: assuming ${DATA_DEV} is present"
     return 0
   fi
-  while [[ ! -e "${DATA_DEV}" ]]; do
+  while :; do
+    # shellcheck disable=SC2086
+    for dev in ${candidates}; do
+      if [[ -e "${dev}" ]]; then
+        DATA_DEV="${dev}"
+        log "data disk ${DATA_DEV} present after ${waited}s"
+        return 0
+      fi
+    done
     if [[ "${waited}" -ge "${WAIT_SECS}" ]]; then
-      log "data disk ${DATA_DEV} did not appear in ${WAIT_SECS}s"
+      log "no data disk at ${candidates} in ${WAIT_SECS}s"
       return 1
     fi
     sleep 5
     waited=$((waited + 5))
   done
-  log "data disk present after ${waited}s"
 }
 
 partition_fs_type() {
