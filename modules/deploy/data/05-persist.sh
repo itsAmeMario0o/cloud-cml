@@ -6,9 +6,9 @@
 # Two phases:
 #   pre   Run by cloud-init runcmd before cml.sh. Waits for the data disk,
 #         formats it only when blank, mounts it at /data, bind-mounts
-#         /data/images onto /var/lib/libvirt/images and, when images are
-#         already there, empties the image list in /provision/refplat so
-#         cml.sh copies only the small node definitions.
+#         /data/images onto /var/lib/libvirt/images and drops the images
+#         already there from the list in /provision/refplat, so cml.sh
+#         copies only the node definitions and any image that is new.
 #   post  Run by cml.sh postprocess after CML is installed. Verifies the
 #         bind mount survived the install, fixes ownership, logs a summary.
 #
@@ -148,17 +148,31 @@ bind_images() {
 }
 
 skip_image_copy_if_present() {
-  local count
+  local count listed present missing img keep
   count="$(image_file_count)"
   if [[ "${count}" -eq 0 ]]; then
     log "no images on the data disk yet, cml.sh will copy them"
     return 0
   fi
-  log "reusing ${count} image files from ${DATA_MNT}/images, emptying refplat image list"
+  # cml.sh copies every listed image with no overwrite guard, so drop the
+  # ones already on the disk and leave only the new ones for it to fetch.
+  listed=0
+  present=0
+  missing=""
+  for img in $(jq -r '.images[]' "${REFPLAT_JSON}"); do
+    listed=$((listed + 1))
+    if [[ -d "${DATA_MNT}/images/virl-base-images/${img}" ]]; then
+      present=$((present + 1))
+    else
+      missing="${missing}${missing:+ }${img}"
+    fi
+  done
+  keep="$(jq -nc --arg s "${missing}" '$s | split(" ") | map(select(length > 0))')"
+  log "reusing ${count} image files from ${DATA_MNT}/images, ${present} of ${listed} listed images already there, copying: ${missing:-none}"
   if [[ "${DRY_RUN}" == "1" ]]; then
-    echo "+ jq '.images = []' ${REFPLAT_JSON}"
+    echo "+ jq '.images = ${keep}' ${REFPLAT_JSON}"
   else
-    jq '.images = []' "${REFPLAT_JSON}" > "${REFPLAT_JSON}.tmp"
+    jq --argjson keep "${keep}" '.images = $keep' "${REFPLAT_JSON}" > "${REFPLAT_JSON}.tmp"
     mv "${REFPLAT_JSON}.tmp" "${REFPLAT_JSON}"
   fi
 }
