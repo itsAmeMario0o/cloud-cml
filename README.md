@@ -2,6 +2,9 @@
 
 Version 2.9.0, July 17 2025
 
+> This is the `azure-lab` fork. What it changes from upstream, and how the
+> routed lab path works, is in [AZURE-LAB.md](AZURE-LAB.md).
+
 CML instances can run on Azure and AWS cloud infrastructure. This repository
 provides automation tooling using Terraform to deploy and manage CML in the
 cloud. We have tested CML deployments using this tool chain in both clouds.
