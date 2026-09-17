@@ -183,6 +183,27 @@ resource "azurerm_network_security_rule" "lab_transit" {
   network_security_group_name = azurerm_network_security_group.cml.name
 }
 
+# azure-lab fork: the mirror of lab-transit-in. The VirtualNetwork tag
+# expands per NIC from that NIC's effective routes, and only the apps
+# subnet carries the UDR for the lab summary. On this NIC a forwarded
+# packet with a lab source matches no default allow and DenyAllOutBound
+# drops it without a trace: RADIUS left eth0 and never reached ISE until
+# this rule existed (2026-09-17). ADR 0003.
+resource "azurerm_network_security_rule" "lab_transit_out" {
+  count                       = try(var.options.cfg.azure.apps_subnet_cidr, "") != "" ? 1 : 0
+  name                        = "lab-transit-out"
+  priority                    = 410
+  direction                   = "Outbound"
+  access                      = "Allow"
+  protocol                    = "*"
+  source_port_range           = "*"
+  destination_port_range      = "*"
+  source_address_prefix       = try(var.options.cfg.azure.lab_summary_cidr, "10.100.0.0/16")
+  destination_address_prefix  = var.options.cfg.azure.apps_subnet_cidr
+  resource_group_name         = data.azurerm_resource_group.cml.name
+  network_security_group_name = azurerm_network_security_group.cml.name
+}
+
 # azure-lab fork: the public IP is owned by the persistent root so the
 # address, and the cml-mcp config that points at it, survive a rebuild.
 # ADR 0003.
