@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# 06-transit-bridge.sh: the routed transit network between lab nodes and
+# 06-transit.sh: the routed transit network between lab nodes and
 # the VNet, with no NAT on the path.
 #
 # Defines a libvirt network in routed mode named "transit": bridge1 at
@@ -26,6 +26,10 @@
 # DRY_RUN=1 prints commands instead of running them and PRETEND_* values
 # replace the probes, for the tests on macOS. Stays bash 3.2 compatible.
 #
+# The file name has no second hyphen on purpose: cml.sh postprocess only
+# runs files matching [0-9]{2}-[[:alnum:]_]+\.sh, and a hyphen in the
+# name gets the script shipped and silently skipped.
+#
 # Part of the azure-lab fork. ADR 0003 in cml-azure-lab.
 set -euo pipefail
 
@@ -47,7 +51,7 @@ PRETEND_ADDR="${PRETEND_ADDR:-}"
 PRETEND_ROUTE="${PRETEND_ROUTE:-}"
 PRETEND_MASQ="${PRETEND_MASQ:-}"
 
-log() { echo "[06-transit-bridge] $*"; }
+log() { echo "[06-transit] $*"; }
 
 run() {
   if [[ "${DRY_RUN}" == "1" ]]; then
@@ -194,7 +198,7 @@ verify() {
 
 main() {
   mkdir -p "${LOG_DIR}"
-  exec > >(tee -a "${LOG_DIR}/06-transit-bridge.log") 2>&1
+  exec > >(tee -a "${LOG_DIR}/06-transit.log") 2>&1
   log "start $(date -u +%FT%TZ)"
   remove_stray_bridge
   define_network
