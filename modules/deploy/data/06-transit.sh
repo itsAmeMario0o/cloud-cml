@@ -102,12 +102,18 @@ remove_stray_bridge() {
   fi
 }
 
+# azure-lab fork: open mode, not route mode. Route mode installs forward
+# rules that accept only this bridge's own /24 and reject the rest of the
+# lab summary, so an endpoint behind a lab switch could not reach the VNet
+# (cml-phoenix LESSONS-LEARNED, "An endpoint behind the switch cannot reach
+# the VNet"). Open mode adds no rules; the zone attribute keeps firewalld
+# forwarding for the bridge, which open mode does not set on its own.
 network_xml() {
   cat <<EOF
 <network>
   <name>${NET_NAME}</name>
-  <forward mode='route'/>
-  <bridge name='${BRIDGE}' stp='off' delay='0'/>
+  <forward mode='open'/>
+  <bridge name='${BRIDGE}' zone='libvirt-routed' stp='off' delay='0'/>
   <ip address='${BRIDGE_IP}' netmask='${BRIDGE_MASK}'/>
   <route address='${LAB_SUMMARY_NET}' prefix='${LAB_SUMMARY_PREFIX}' gateway='${LAB_EDGE}'/>
 </network>

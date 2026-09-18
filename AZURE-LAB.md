@@ -54,12 +54,16 @@ VNet NIC. Four pieces make that work, and all four are required.
    cannot model it, because it refuses a local IP that is not the NIC's own.
 
 4. **The transit network on the host**, built by `06-transit.sh` from
-   `cml.sh` postprocess: a libvirt network in routed mode named `transit`
+   `cml.sh` postprocess: a libvirt network in open mode named `transit`
    on bridge `bridge1` at `10.100.0.1/24`, with a static route for the rest
-   of the lab summary to the lab edge at `10.100.0.2`, autostarted. libvirt
-   places the bridge in its `libvirt-routed` firewalld zone, whose shipped
-   policies accept forwarding both ways; a plain netplan bridge is rejected
-   by firewalld with "administratively prohibited".
+   of the lab summary to the lab edge at `10.100.0.2`, autostarted. Open
+   mode, not route mode: route mode installs forward rules that admit only
+   the bridge's own /24 and reject the rest of the lab summary, so an
+   endpoint behind a lab switch could not reach the VNet. Open mode adds no
+   rules. The `zone='libvirt-routed'` attribute on the bridge keeps it in
+   that firewalld zone, whose shipped policies accept forwarding both ways;
+   a bridge in the default zone is rejected with "administratively
+   prohibited".
 
 Two naming rules the script depends on, both learned the hard way:
 
